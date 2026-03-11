@@ -1,5 +1,13 @@
 import { SECTION_COLORS } from "../content/theme";
 import ExtensionEventChannel from "./ExtensionEventChannel";
+import {
+  CourseHighlightStatus,
+  DEFAULT_COGS_PERSONALIZATION_CONFIG,
+  ICogsPersonalizationConfig,
+  ICogsStreamDefinition,
+  normalizeCourseCode,
+  parseCourseCodes,
+} from "./CogsPersonalization";
 import Schedule from "./Schedule";
 import Section from "./Section";
 
@@ -10,6 +18,19 @@ import Section from "./Section";
 // App.tsx contains listeners for changes to the this storage and the frontend
 // components will be modified accordingly.
 export default class ExtensionStorage {
+  private static isHighlightStatus(value: string): value is CourseHighlightStatus {
+    return ["requiredPending", "scheduled", "conflict"].includes(value);
+  }
+
+  private static sanitizeStream(
+    stream?: Partial<ICogsStreamDefinition>
+  ): ICogsStreamDefinition {
+    return {
+      requiredCourses: parseCourseCodes((stream?.requiredCourses ?? []).join("\n")),
+      moduleCourses: parseCourseCodes((stream?.moduleCourses ?? []).join("\n")),
+    };
+  }
+
   static async getCurrentTerm(): Promise<number> {
     const currentTerm = (await chrome.storage.local.get("currentTerm"))
       .currentTerm;
@@ -162,5 +183,94 @@ export default class ExtensionStorage {
     isConflictAddingEnabled: boolean
   ): Promise<void> {
     await chrome.storage.local.set({ isConflictAddingEnabled });
+  }
+
+  static async getCogsPersonalizationConfig(): Promise<ICogsPersonalizationConfig> {
+    const rawConfig = (await chrome.storage.local.get("cogsPersonalization"))
+      .cogsPersonalization as Partial<ICogsPersonalizationConfig> | undefined;
+
+    if (!rawConfig) {
+      return DEFAULT_COGS_PERSONALIZATION_CONFIG;
+    }
+
+    const streams = Object.entries(rawConfig.streams ?? {}).reduce(
+      (acc, [streamName, streamDefinition]) => {
+        const normalizedName = streamName.trim();
+        if (!normalizedName) return acc;
+        acc[normalizedName] = this.sanitizeStream(streamDefinition);
+        return acc;
+      },
+      {} as Record<string, ICogsStreamDefinition>
+    );
+
+    if (Object.keys(streams).length === 0) {
+      streams[DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream] =
+        DEFAULT_COGS_PERSONALIZATION_CONFIG.streams[
+          DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream
+        ];
+    }
+
+    const selectedStream = (rawConfig.selectedStream ?? "").trim();
+    const finalSelectedStream = streams[selectedStream]
+      ? selectedStream
+      : Object.keys(streams)[0];
+
+    const statusPriority = (rawConfig.statusPriority ?? []).filter((value) =>
+      this.isHighlightStatus(value)
+    );
+
+    return {
+      enabled: Boolean(rawConfig.enabled),
+      selectedStream: finalSelectedStream,
+      streams,
+      completedCourses: parseCourseCodes((rawConfig.completedCourses ?? []).join("\n")),
+      academicProgressUrl: (rawConfig.academicProgressUrl ?? "").trim(),
+      statusPriority:
+        statusPriority.length > 0
+          ? statusPriority
+          : DEFAULT_COGS_PERSONALIZATION_CONFIG.statusPriority,
+    };
+  }
+
+  static async setCogsPersonalizationConfig(
+    config: ICogsPersonalizationConfig
+  ): Promise<void> {
+    const streams = Object.entries(config.streams).reduce(
+      (acc, [streamName, streamDefinition]) => {
+        const normalizedName = streamName.trim();
+        if (!normalizedName) return acc;
+        acc[normalizedName] = this.sanitizeStream(streamDefinition);
+        return acc;
+      },
+      {} as Record<string, ICogsStreamDefinition>
+    );
+
+    const fallbackStreamName = config.selectedStream.trim() || "Custom Stream";
+    if (!streams[fallbackStreamName]) {
+      streams[fallbackStreamName] = {
+        requiredCourses: [],
+        moduleCourses: [],
+      };
+    }
+
+    const statusPriority = config.statusPriority.filter((value) =>
+      this.isHighlightStatus(value)
+    );
+
+    await chrome.storage.local.set({
+      cogsPersonalization: {
+        enabled: config.enabled,
+        selectedStream: fallbackStreamName,
+        streams,
+        completedCourses: config.completedCourses.map((code) =>
+          normalizeCourseCode(code)
+        ),
+        academicProgressUrl: config.academicProgressUrl.trim(),
+        statusPriority:
+          statusPriority.length > 0
+            ? statusPriority
+            : DEFAULT_COGS_PERSONALIZATION_CONFIG.statusPriority,
+      } satisfies ICogsPersonalizationConfig,
+    });
   }
 }

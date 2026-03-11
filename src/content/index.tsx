@@ -5,6 +5,7 @@ import App from "./App/App";
 import { observeDOMAndAddCopyScheduleButtons } from "../domManipulators/copySchedules";
 import { observeDOMAndAddButtons } from "../domManipulators/addSectionButton";
 import { initializeAutofill } from "../domManipulators/autoFillCourseSelection";
+import { observeDOMAndHighlightCourses } from "../domManipulators/courseHighlighting";
 
 initializeAutofill();
 
@@ -17,10 +18,12 @@ function setupObserver(): void {
       "DOMContentLoaded",
       observeDOMAndAddCopyScheduleButtons
     );
+    document.addEventListener("DOMContentLoaded", observeDOMAndHighlightCourses);
   } else {
     // Directly observe DOM changes
     observeDOMAndAddButtons();
     observeDOMAndAddCopyScheduleButtons();
+    observeDOMAndHighlightCourses();
   }
 }
 

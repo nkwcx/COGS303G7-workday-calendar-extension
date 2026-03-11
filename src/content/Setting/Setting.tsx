@@ -6,6 +6,7 @@ import DiscordIcon from "../Icons/DiscordIcon";
 import ExtensionStorage from "../../objects/ExtensionStorage";
 import Schedule from "../../objects/Schedule";
 
+
 const autoFillInfo = (
   <div>
     <p>
@@ -60,9 +61,11 @@ const Setting = ({ schedule, setSchedule }: IProps) => {
   const [isAutoFill, setIsAutoFill] = useState(false);
   const [isConflictAdding, setIsConflictAdding] = useState(false);
 
+
   useEffect(() => {
     ExtensionStorage.getIsAutoFillEnabled().then(setIsAutoFill);
     ExtensionStorage.getIsConflictAddingEnabled().then(setIsConflictAdding);
+
   }, []);
 
   const toggleAutoFill = (checked: boolean) => {

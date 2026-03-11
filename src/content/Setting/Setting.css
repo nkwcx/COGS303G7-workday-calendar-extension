@@ -124,3 +124,38 @@ input:checked + .setting-slider:before {
   background-color: var(--control-button-hover);
   border-color: var(--border-hover);
 }
+
+.setting-cogs-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-cogs-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-cogs-field-label {
+  font-size: 0.75rem;
+  color: var(--text-color);
+}
+
+.setting-cogs-input,
+.setting-cogs-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  color: var(--text-color);
+  font-size: 0.75rem;
+  padding: 8px;
+}
+
+.setting-cogs-textarea {
+  resize: vertical;
+  min-height: 70px;
+}

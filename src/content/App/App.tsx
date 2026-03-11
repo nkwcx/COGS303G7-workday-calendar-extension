@@ -17,10 +17,13 @@ import SettingsIcon from "../Icons/SettingsIcon";
 import CalendarIcon from "../Icons/CalendarIcon";
 import Setting from "../Setting/Setting";
 import DownloadICS from "../DownloadICS/DownloadICS";
+import CogsIcon from "../Icons/CogsIcon";
+import CogsPersonalizationPage from "../CogsPersonalizationPage/CogsPersonalizationPage";
 
 enum ExtensionViews {
   calendar,
   setting,
+  cogs,
 }
 
 function App() {
@@ -170,6 +173,11 @@ function App() {
           />
         </div>
         <div className="top-bar-icon">
+          <CogsIcon
+            size={22}
+            onClick={() => setCurrentView(ExtensionViews.cogs)}
+            active={currentView === ExtensionViews.cogs}
+          />
           <CalendarIcon
             size={22}
             onClick={() => setCurrentView(ExtensionViews.calendar)}
@@ -183,6 +191,8 @@ function App() {
       <ProgressModal />
       {currentView === ExtensionViews.setting ? (
         <Setting schedule={schedule} setSchedule={setSchedule} />
+      ) : currentView === ExtensionViews.cogs ? (
+        <CogsPersonalizationPage />
       ) : (
         <>
           <CalendarControls

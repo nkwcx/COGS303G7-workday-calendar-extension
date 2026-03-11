@@ -27,3 +27,18 @@ code {
   --disabled-colour: #f2f2f2;
   --disabled-font-colour: #c5c5c5;
 }
+
+[data-automation-id="compositeContainer"].cogs-highlight-required {
+  border-left: 4px solid #1e7f3f;
+  background-color: rgba(30, 127, 63, 0.1);
+}
+
+[data-automation-id="compositeContainer"].cogs-highlight-scheduled {
+  border-left: 4px solid #7d7d7d;
+  background-color: rgba(125, 125, 125, 0.12);
+}
+
+[data-automation-id="compositeContainer"].cogs-highlight-conflict {
+  border-left: 4px solid #bf2f2f;
+  background-color: rgba(191, 47, 47, 0.1);
+}
