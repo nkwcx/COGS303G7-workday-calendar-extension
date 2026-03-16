@@ -8,6 +8,7 @@ import Schedule from "../objects/Schedule";
 
 const HIGHLIGHT_CLASS_BY_STATUS: Record<CourseHighlightStatus, string> = {
   requiredPending: "cogs-highlight-required",
+  modulePending: "cogs-highlight-module",
   scheduled: "cogs-highlight-scheduled",
   conflict: "cogs-highlight-conflict",
 };
@@ -65,6 +66,13 @@ function setHighlight(container: Element, status: CourseHighlightStatus): void {
       "rgba(30, 127, 63, 0.14)",
       "important"
     );
+  } else if (status === "modulePending") {
+    container.style.setProperty("border-left", "4px solid #63b47a", "important");
+    container.style.setProperty(
+      "background-color",
+      "rgba(99, 180, 122, 0.13)",
+      "important"
+    );
   } else if (status === "scheduled") {
     container.style.setProperty("border-left", "4px solid #7d7d7d", "important");
     container.style.setProperty(
@@ -98,7 +106,8 @@ async function getHighlightStatus(
   schedule: Schedule,
   currentSession: string,
   currentWorklist: number,
-  targetCourses: Set<string>,
+  requiredCourses: Set<string>,
+  moduleCourses: Set<string>,
   completedCourses: Set<string>,
   statusPriority: CourseHighlightStatus[]
 ): Promise<CourseHighlightStatus | null> {
@@ -118,14 +127,16 @@ async function getHighlightStatus(
         hasCourseMatch(scheduledSection.getCode(), courseVariants)
     );
 
-  const isTargetCourse = hasCourseMatch(code, targetCourses);
+  const isRequiredCourse = hasCourseMatch(code, requiredCourses);
+  const isModuleCourse = hasCourseMatch(code, moduleCourses);
   const isCompleted = hasCourseMatch(code, completedCourses);
   const hasConflict = schedule.getConflictSections(section).length > 0;
 
   const statusFlags: Record<CourseHighlightStatus, boolean> = {
-    scheduled: scheduledInCurrentView,
+    scheduled: scheduledInCurrentView || isCompleted,
     conflict: hasConflict,
-    requiredPending: isTargetCourse && !isCompleted,
+    requiredPending: isRequiredCourse && !isCompleted,
+    modulePending: !isRequiredCourse && isModuleCourse && !isCompleted,
   };
 
   for (const status of statusPriority) {
@@ -166,10 +177,12 @@ async function refreshHighlights(): Promise<void> {
     return;
   }
 
-  const targetCourses = new Set<string>([
-    ...selectedStream.requiredCourses,
-    ...selectedStream.moduleCourses,
-  ].flatMap((course) => toCourseCodeVariants(course)));
+  const requiredCourses = new Set<string>(
+    selectedStream.requiredCourses.flatMap((course) => toCourseCodeVariants(course))
+  );
+  const moduleCourses = new Set<string>(
+    selectedStream.moduleCourses.flatMap((course) => toCourseCodeVariants(course))
+  );
   const completedCourses = new Set<string>(
     config.completedCourses.flatMap((course) => toCourseCodeVariants(course))
   );
@@ -189,7 +202,8 @@ async function refreshHighlights(): Promise<void> {
           schedule,
           currentSession,
           currentWorklist,
-          targetCourses,
+          requiredCourses,
+          moduleCourses,
           completedCourses,
           config.statusPriority
         );

@@ -148,6 +148,31 @@ input:checked + .cogs-slider:before {
   line-height: 1.4;
 }
 
+.cogs-stream-note,
+.cogs-progress-note {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: #5a6470;
+  margin-top: 4px;
+}
+
+.cogs-import-btn {
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 0.74rem;
+  color: var(--text-color);
+  transition: all 0.2s;
+}
+
+.cogs-import-btn:hover {
+  background-color: var(--control-button-hover);
+  border-color: var(--border-hover);
+}
+
 .cogs-field-label {
   font-size: 0.72rem;
   color: var(--text-color);
@@ -209,6 +234,10 @@ input:checked + .cogs-slider:before {
 
 .cogs-legend-green {
   background-color: #1e7f3f;
+}
+
+.cogs-legend-green-light {
+  background-color: #63b47a;
 }
 
 .cogs-legend-grey {

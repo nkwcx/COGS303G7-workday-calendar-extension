@@ -6,6 +6,7 @@ import {
   DEFAULT_COGS_PERSONALIZATION_CONFIG,
   DEFAULT_COGS_STREAMS,
   STREAM_REQUIRED_NOTES,
+  normalizeCourseCode,
   parseCourseCodes,
 } from "../../objects/CogsPersonalization";
 import InfoSquareIcon from "../Icons/InfoSquareIcon";
@@ -35,9 +36,46 @@ const CogsPersonalizationPage = () => {
   const [requiredCoursesInput, setRequiredCoursesInput] = useState("");
   const [moduleCoursesInput, setModuleCoursesInput] = useState("");
   const [completedCoursesInput, setCompletedCoursesInput] = useState("");
-  const [academicProgressUrlInput, setAcademicProgressUrlInput] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [savedBadge, setSavedBadge] = useState(false);
+
+  const extractCompletedCoursesFromPage = (): string[] => {
+    const completedCourseCodes = new Set<string>();
+    const codeRegex = /\b[A-Z]{3,5}(?:_[A-Z])?\s+[0-9]{2,3}[A-Z]?\b/g;
+
+    const courseContainers = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-automation-id="table"], [role="row"], tr'
+      )
+    );
+
+    for (const container of courseContainers) {
+      const text = container.innerText?.trim() ?? "";
+      if (!text) continue;
+
+      const matches = text.match(codeRegex) ?? [];
+      for (const match of matches) {
+        completedCourseCodes.add(normalizeCourseCode(match));
+      }
+    }
+
+    return Array.from(completedCourseCodes);
+  };
+
+  const isLikelyAcademicPage = (): boolean => {
+    const href = window.location.href;
+    const title = document.title;
+    return (
+      /myworkday\.com\/ubc\//i.test(href) &&
+      (href.includes("10089$") ||
+        /Academic\s+Progress|Academic\s+History/i.test(title) ||
+        Boolean(
+          document.querySelector(
+            '[data-automation-id="tabLabel"][title="Academic Progress"], [data-automation-id="tabLabel"][title="Academic History"]'
+          )
+        ))
+    );
+  };
 
   useEffect(() => {
     ExtensionStorage.getCogsPersonalizationConfig().then((config) => {
@@ -49,7 +87,6 @@ const CogsPersonalizationPage = () => {
       setRequiredCoursesInput((stream?.requiredCourses ?? []).join("\n"));
       setModuleCoursesInput((stream?.moduleCourses ?? []).join("\n"));
       setCompletedCoursesInput(config.completedCourses.join("\n"));
-      setAcademicProgressUrlInput(config.academicProgressUrl);
       setIsLoaded(true);
     });
   }, []);
@@ -68,7 +105,6 @@ const CogsPersonalizationPage = () => {
         enabled: isEnabled,
         selectedStream: trimmedStreamName,
         completedCourses: parseCourseCodes(completedCoursesInput),
-        academicProgressUrl: academicProgressUrlInput.trim(),
       });
       setSavedBadge(true);
       window.setTimeout(() => setSavedBadge(false), 1500);
@@ -80,7 +116,6 @@ const CogsPersonalizationPage = () => {
     isEnabled,
     streamName,
     completedCoursesInput,
-    academicProgressUrlInput,
   ]);
 
   const toggleEnabled = async (checked: boolean) => {
@@ -98,6 +133,33 @@ const CogsPersonalizationPage = () => {
     setStreamName(nextStream);
     setRequiredCoursesInput((stream?.requiredCourses ?? []).join("\n"));
     setModuleCoursesInput((stream?.moduleCourses ?? []).join("\n"));
+  };
+
+  const importCompletedCoursesFromCurrentPage = async () => {
+    if (!isLikelyAcademicPage()) {
+      alert(
+        "Open your Workday Academic Progress or Academic History page first, then click import."
+      );
+      return;
+    }
+
+    const completedCoursesFromPage = extractCompletedCoursesFromPage();
+    if (completedCoursesFromPage.length === 0) {
+      alert(
+        "No courses were detected. Expand your academic records/tables on Workday and try again."
+      );
+      return;
+    }
+
+    const mergedCourses = Array.from(
+      new Set([
+        ...parseCourseCodes(completedCoursesInput),
+        ...completedCoursesFromPage,
+      ])
+    );
+
+    setCompletedCoursesInput(mergedCourses.join("\n"));
+    alert(`Imported ${completedCoursesFromPage.length} completed courses.`);
   };
 
   return (
@@ -160,6 +222,17 @@ const CogsPersonalizationPage = () => {
             streamName as keyof typeof STREAM_REQUIRED_NOTES
           ]}
         </div>
+        <div className="cogs-progress-note">
+          To import completed courses, open your Workday Academic Progress or
+          Academic History page, then click the import button below.
+        </div>
+        <button
+          type="button"
+          className="cogs-import-btn"
+          onClick={importCompletedCoursesFromCurrentPage}
+        >
+          Import from Academic Progress Page
+        </button>
       </div>
 
       <div className="cogs-page-field">
@@ -198,25 +271,19 @@ const CogsPersonalizationPage = () => {
         />
       </div>
 
-      <div className="cogs-page-field">
-        <label className="cogs-field-label">Academic Progress URL</label>
-        <input
-          className="cogs-input"
-          placeholder="Paste Workday academic progress page URL"
-          value={academicProgressUrlInput}
-          onChange={(e) => setAcademicProgressUrlInput(e.target.value)}
-        />
-      </div>
-
       <div className="cogs-legend">
         <span className="cogs-legend-title">Highlight Legend</span>
         <div className="cogs-legend-row">
           <span className="cogs-legend-swatch cogs-legend-green" />
-          <span>Required / module — not completed</span>
+          <span>Required course — not completed</span>
+        </div>
+        <div className="cogs-legend-row">
+          <span className="cogs-legend-swatch cogs-legend-green-light" />
+          <span>Module course — not completed</span>
         </div>
         <div className="cogs-legend-row">
           <span className="cogs-legend-swatch cogs-legend-grey" />
-          <span>Already scheduled</span>
+          <span>Already scheduled or completed</span>
         </div>
         <div className="cogs-legend-row">
           <span className="cogs-legend-swatch cogs-legend-red" />

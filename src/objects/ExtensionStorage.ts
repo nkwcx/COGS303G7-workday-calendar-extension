@@ -25,7 +25,26 @@ export default class ExtensionStorage {
   }
 
   private static isHighlightStatus(value: string): value is CourseHighlightStatus {
-    return ["requiredPending", "scheduled", "conflict"].includes(value);
+    return [
+      "requiredPending",
+      "modulePending",
+      "scheduled",
+      "conflict",
+    ].includes(value);
+  }
+
+  private static normalizeStatusPriority(
+    statusPriority: CourseHighlightStatus[]
+  ): CourseHighlightStatus[] {
+    const deduped = statusPriority.filter(
+      (value, index) => statusPriority.indexOf(value) === index
+    );
+
+    const missingDefaults =
+      DEFAULT_COGS_PERSONALIZATION_CONFIG.statusPriority.filter(
+        (value) => !deduped.includes(value)
+      );
+    return [...deduped, ...missingDefaults];
   }
 
   private static getDefaultStreamsCopy(): Record<string, ICogsStreamDefinition> {
@@ -209,8 +228,10 @@ export default class ExtensionStorage {
       ? selectedStream
       : DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream;
 
-    const statusPriority = (rawConfig.statusPriority ?? []).filter((value) =>
-      this.isHighlightStatus(value)
+    const statusPriority = this.normalizeStatusPriority(
+      (rawConfig.statusPriority ?? []).filter((value) =>
+        this.isHighlightStatus(value)
+      )
     );
 
     return {
@@ -235,8 +256,8 @@ export default class ExtensionStorage {
       : DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream;
     const streams = this.getDefaultStreamsCopy();
 
-    const statusPriority = config.statusPriority.filter((value) =>
-      this.isHighlightStatus(value)
+    const statusPriority = this.normalizeStatusPriority(
+      config.statusPriority.filter((value) => this.isHighlightStatus(value))
     );
 
     await chrome.storage.local.set({

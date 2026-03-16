@@ -33,6 +33,11 @@ code {
   background-color: rgba(30, 127, 63, 0.1);
 }
 
+[data-automation-id="compositeContainer"].cogs-highlight-module {
+  border-left: 4px solid #63b47a;
+  background-color: rgba(99, 180, 122, 0.1);
+}
+
 [data-automation-id="compositeContainer"].cogs-highlight-scheduled {
   border-left: 4px solid #7d7d7d;
   background-color: rgba(125, 125, 125, 0.12);

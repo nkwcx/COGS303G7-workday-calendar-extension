@@ -1,5 +1,6 @@
 export type CourseHighlightStatus =
   | "requiredPending"
+  | "modulePending"
   | "scheduled"
   | "conflict";
 
@@ -385,7 +386,12 @@ export const DEFAULT_COGS_PERSONALIZATION_CONFIG: ICogsPersonalizationConfig = {
   streams: DEFAULT_COGS_STREAMS,
   completedCourses: [],
   academicProgressUrl: "",
-  statusPriority: ["scheduled", "conflict", "requiredPending"],
+  statusPriority: [
+    "scheduled",
+    "conflict",
+    "requiredPending",
+    "modulePending",
+  ],
 };
 
 export function normalizeCourseCode(input: string): string {
