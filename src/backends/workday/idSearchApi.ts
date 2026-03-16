@@ -9,8 +9,13 @@ import SectionDetail from "../../objects/SectionDetail";
 import ExtensionStorage from "../../objects/ExtensionStorage";
 import { SECTION_COLORS } from "../../content/theme";
 
+interface IFetchSectionOptions {
+  silent?: boolean;
+}
+
 export async function fetchSectionFromID(
-  courseId: string
+  courseId: string,
+  options?: IFetchSectionOptions
 ): Promise<Section | null> {
   // Potential issue: the hardcoded path segment `1$15194/15194$` works for me
   // and for most users, but there have been isolated reports where adding a
@@ -20,11 +25,12 @@ export async function fetchSectionFromID(
   // button fails while a manually pasted URL works, a possible fallback is to
   // store the manually added URL in extension storage and reuse it.
   const url = `https://wd10.myworkday.com/ubc/inst/1$15194/15194$${courseId}.htmld`;
-  return fetchSectionFromUrl(url);
+  return fetchSectionFromUrl(url, options);
 }
 
 export async function fetchSectionFromUrl(
-  url: string
+  url: string,
+  options?: IFetchSectionOptions
 ): Promise<Section | null> {
   // When pasting a URL manually, the "Copy URL" button produces links like:
   // https://wd10.myworkday.com/ubc/d/inst/15$365714/15194$445563.htmld
@@ -36,7 +42,9 @@ export async function fetchSectionFromUrl(
     const data = await response.json();
     return fetchSectionFromJSON(data, getCourseIdFromUrl(updatedUrl));
   } catch (error) {
-    console.error("Error fetching data:", error);
+    if (!options?.silent) {
+      console.error("Error fetching data:", error);
+    }
     return null;
   }
 }

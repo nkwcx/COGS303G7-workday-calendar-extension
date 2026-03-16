@@ -1,7 +1,9 @@
 import { SECTION_COLORS } from "../content/theme";
 import ExtensionEventChannel from "./ExtensionEventChannel";
 import {
+  COGS_STREAM_OPTIONS,
   CourseHighlightStatus,
+  DEFAULT_COGS_STREAMS,
   DEFAULT_COGS_PERSONALIZATION_CONFIG,
   ICogsPersonalizationConfig,
   ICogsStreamDefinition,
@@ -18,17 +20,24 @@ import Section from "./Section";
 // App.tsx contains listeners for changes to the this storage and the frontend
 // components will be modified accordingly.
 export default class ExtensionStorage {
+  private static isBuiltInStream(streamName: string): boolean {
+    return COGS_STREAM_OPTIONS.includes(streamName as (typeof COGS_STREAM_OPTIONS)[number]);
+  }
+
   private static isHighlightStatus(value: string): value is CourseHighlightStatus {
     return ["requiredPending", "scheduled", "conflict"].includes(value);
   }
 
-  private static sanitizeStream(
-    stream?: Partial<ICogsStreamDefinition>
-  ): ICogsStreamDefinition {
-    return {
-      requiredCourses: parseCourseCodes((stream?.requiredCourses ?? []).join("\n")),
-      moduleCourses: parseCourseCodes((stream?.moduleCourses ?? []).join("\n")),
-    };
+  private static getDefaultStreamsCopy(): Record<string, ICogsStreamDefinition> {
+    return Object.fromEntries(
+      Object.entries(DEFAULT_COGS_STREAMS).map(([streamName, streamDefinition]) => [
+        streamName,
+        {
+          requiredCourses: [...streamDefinition.requiredCourses],
+          moduleCourses: [...streamDefinition.moduleCourses],
+        },
+      ])
+    );
   }
 
   static async getCurrentTerm(): Promise<number> {
@@ -193,27 +202,12 @@ export default class ExtensionStorage {
       return DEFAULT_COGS_PERSONALIZATION_CONFIG;
     }
 
-    const streams = Object.entries(rawConfig.streams ?? {}).reduce(
-      (acc, [streamName, streamDefinition]) => {
-        const normalizedName = streamName.trim();
-        if (!normalizedName) return acc;
-        acc[normalizedName] = this.sanitizeStream(streamDefinition);
-        return acc;
-      },
-      {} as Record<string, ICogsStreamDefinition>
-    );
-
-    if (Object.keys(streams).length === 0) {
-      streams[DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream] =
-        DEFAULT_COGS_PERSONALIZATION_CONFIG.streams[
-          DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream
-        ];
-    }
+    const streams = this.getDefaultStreamsCopy();
 
     const selectedStream = (rawConfig.selectedStream ?? "").trim();
-    const finalSelectedStream = streams[selectedStream]
+    const finalSelectedStream = this.isBuiltInStream(selectedStream)
       ? selectedStream
-      : Object.keys(streams)[0];
+      : DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream;
 
     const statusPriority = (rawConfig.statusPriority ?? []).filter((value) =>
       this.isHighlightStatus(value)
@@ -235,23 +229,11 @@ export default class ExtensionStorage {
   static async setCogsPersonalizationConfig(
     config: ICogsPersonalizationConfig
   ): Promise<void> {
-    const streams = Object.entries(config.streams).reduce(
-      (acc, [streamName, streamDefinition]) => {
-        const normalizedName = streamName.trim();
-        if (!normalizedName) return acc;
-        acc[normalizedName] = this.sanitizeStream(streamDefinition);
-        return acc;
-      },
-      {} as Record<string, ICogsStreamDefinition>
-    );
-
-    const fallbackStreamName = config.selectedStream.trim() || "Custom Stream";
-    if (!streams[fallbackStreamName]) {
-      streams[fallbackStreamName] = {
-        requiredCourses: [],
-        moduleCourses: [],
-      };
-    }
+    const requestedStreamName = config.selectedStream.trim();
+    const fallbackStreamName = this.isBuiltInStream(requestedStreamName)
+      ? requestedStreamName
+      : DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream;
+    const streams = this.getDefaultStreamsCopy();
 
     const statusPriority = config.statusPriority.filter((value) =>
       this.isHighlightStatus(value)

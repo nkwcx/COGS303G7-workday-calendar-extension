@@ -88,7 +88,7 @@ function hasCourseMatch(code: string, normalizedCourseSet: Set<string>): boolean
 
 function getCachedSection(courseId: string) {
   if (!sectionCache.has(courseId)) {
-    sectionCache.set(courseId, fetchSectionFromID(courseId));
+    sectionCache.set(courseId, fetchSectionFromID(courseId, { silent: true }));
   }
   return sectionCache.get(courseId)!;
 }

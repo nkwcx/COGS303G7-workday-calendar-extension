@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import "./CogsPersonalizationPage.css";
 import ExtensionStorage from "../../objects/ExtensionStorage";
 import {
+  COGS_STREAM_OPTIONS,
   DEFAULT_COGS_PERSONALIZATION_CONFIG,
+  DEFAULT_COGS_STREAMS,
+  STREAM_REQUIRED_NOTES,
   parseCourseCodes,
 } from "../../objects/CogsPersonalization";
 import InfoSquareIcon from "../Icons/InfoSquareIcon";
@@ -38,7 +41,9 @@ const CogsPersonalizationPage = () => {
 
   useEffect(() => {
     ExtensionStorage.getCogsPersonalizationConfig().then((config) => {
-      const stream = config.streams[config.selectedStream];
+      const stream =
+        DEFAULT_COGS_STREAMS[config.selectedStream] ??
+        DEFAULT_COGS_STREAMS[DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream];
       setIsEnabled(config.enabled);
       setStreamName(config.selectedStream);
       setRequiredCoursesInput((stream?.requiredCourses ?? []).join("\n"));
@@ -54,20 +59,14 @@ const CogsPersonalizationPage = () => {
     if (!isLoaded) return;
 
     const timeout = window.setTimeout(async () => {
-      const trimmedStreamName = streamName.trim() || "Custom Stream";
+      const trimmedStreamName =
+        streamName.trim() || DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream;
       const existingConfig =
         await ExtensionStorage.getCogsPersonalizationConfig();
       await ExtensionStorage.setCogsPersonalizationConfig({
         ...existingConfig,
         enabled: isEnabled,
         selectedStream: trimmedStreamName,
-        streams: {
-          ...existingConfig.streams,
-          [trimmedStreamName]: {
-            requiredCourses: parseCourseCodes(requiredCoursesInput),
-            moduleCourses: parseCourseCodes(moduleCoursesInput),
-          },
-        },
         completedCourses: parseCourseCodes(completedCoursesInput),
         academicProgressUrl: academicProgressUrlInput.trim(),
       });
@@ -80,8 +79,6 @@ const CogsPersonalizationPage = () => {
     isLoaded,
     isEnabled,
     streamName,
-    requiredCoursesInput,
-    moduleCoursesInput,
     completedCoursesInput,
     academicProgressUrlInput,
   ]);
@@ -93,6 +90,14 @@ const CogsPersonalizationPage = () => {
       ...existingConfig,
       enabled: checked,
     });
+  };
+
+  const selectStream = (nextStream: string) => {
+    const stream = DEFAULT_COGS_STREAMS[nextStream];
+
+    setStreamName(nextStream);
+    setRequiredCoursesInput((stream?.requiredCourses ?? []).join("\n"));
+    setModuleCoursesInput((stream?.moduleCourses ?? []).join("\n"));
   };
 
   return (
@@ -128,35 +133,55 @@ const CogsPersonalizationPage = () => {
       </div>
 
       <div className="cogs-page-field">
-        <label className="cogs-field-label">Stream Name</label>
-        <input
-          className="cogs-input"
-          placeholder="e.g. Computational Intelligence"
-          value={streamName}
-          onChange={(e) => setStreamName(e.target.value)}
-        />
+        <label className="cogs-field-label">Select Stream</label>
+        <div className="cogs-stream-list" role="radiogroup" aria-label="COGS stream selection">
+          {COGS_STREAM_OPTIONS.map((option) => {
+            const isSelected = streamName === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                className={`cogs-stream-option${isSelected ? " is-selected" : ""}`}
+                onClick={() => selectStream(option)}
+              >
+                <span
+                  className={`cogs-stream-check${isSelected ? " is-selected" : ""}`}
+                  aria-hidden="true"
+                />
+                <span className="cogs-stream-label">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="cogs-stream-note">
+          {STREAM_REQUIRED_NOTES[
+            streamName as keyof typeof STREAM_REQUIRED_NOTES
+          ]}
+        </div>
       </div>
 
       <div className="cogs-page-field">
         <label className="cogs-field-label">
-          Required Courses (one per line or comma separated)
+          Required Courses (stream defaults)
         </label>
         <textarea
           className="cogs-textarea"
           value={requiredCoursesInput}
-          onChange={(e) => setRequiredCoursesInput(e.target.value)}
+          readOnly
           placeholder={"COGS_V 200\nCOGS_V 201"}
         />
       </div>
 
       <div className="cogs-page-field">
         <label className="cogs-field-label">
-          Module Courses (one per line or comma separated)
+          Module Courses (program defaults)
         </label>
         <textarea
           className="cogs-textarea"
           value={moduleCoursesInput}
-          onChange={(e) => setModuleCoursesInput(e.target.value)}
+          readOnly
           placeholder={"CPSC_V 121\nPSYC_V 101"}
         />
       </div>
