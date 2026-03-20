@@ -132,9 +132,11 @@ async function getHighlightStatus(
   const isCompleted = hasCourseMatch(code, completedCourses);
   const hasConflict = schedule.getConflictSections(section).length > 0;
 
+  const isTrackedCourse = isRequiredCourse || isModuleCourse;
+
   const statusFlags: Record<CourseHighlightStatus, boolean> = {
-    scheduled: scheduledInCurrentView || isCompleted,
-    conflict: hasConflict,
+    scheduled: isCompleted || (scheduledInCurrentView && isTrackedCourse),
+    conflict: isTrackedCourse && !isCompleted && hasConflict,
     requiredPending: isRequiredCourse && !isCompleted,
     modulePending: !isRequiredCourse && isModuleCourse && !isCompleted,
   };
