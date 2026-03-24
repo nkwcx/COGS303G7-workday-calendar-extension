@@ -18,6 +18,7 @@ const ALL_HIGHLIGHT_CLASSES = Object.values(HIGHLIGHT_CLASS_BY_STATUS);
 let activeObserver: MutationObserver | null = null;
 let highlightRefreshTimer: number | null = null;
 let refreshVersion = 0;
+let legendCollapsed = false;
 
 const sectionCache = new Map<string, ReturnType<typeof fetchSectionFromID>>();
 
@@ -150,6 +151,106 @@ async function getHighlightStatus(
   return null;
 }
 
+const LEGEND_ITEMS: { color: string; label: string }[] = [
+  { color: "#1e7f3f", label: "Required — not completed" },
+  { color: "#63b47a", label: "Module — not completed" },
+  { color: "#7d7d7d", label: "Scheduled / completed" },
+  { color: "#bf2f2f", label: "Time conflict" },
+];
+
+function setLegendCollapsed(wrapper: HTMLElement, collapsed: boolean): void {
+  legendCollapsed = collapsed;
+  const legend = wrapper.querySelector("#cogs-floating-legend") as HTMLElement;
+  const toggle = wrapper.querySelector("#cogs-legend-toggle") as HTMLElement;
+  if (legend) legend.style.display = collapsed ? "none" : "";
+  if (toggle) toggle.style.display = collapsed ? "" : "none";
+}
+
+function updateLegendPosition(wrapper: HTMLElement): void {
+  const sidebar = document.getElementById("react-container")?.parentElement;
+  const isOpen = sidebar?.style.right === "0px";
+  wrapper.style.right = isOpen ? "335px" : "20px";
+}
+
+function ensureFloatingLegend(visible: boolean): void {
+  const existing = document.getElementById("cogs-legend-wrapper");
+
+  if (!visible) {
+    if (existing) existing.style.display = "none";
+    return;
+  }
+
+  if (existing) {
+    existing.style.display = "";
+    updateLegendPosition(existing);
+    return;
+  }
+
+  // Wrapper holds both the expanded legend and the collapsed toggle button
+  const wrapper = document.createElement("div");
+  wrapper.id = "cogs-legend-wrapper";
+  updateLegendPosition(wrapper);
+
+  // Re-position when sidebar opens/closes (watches for style changes on sidebar)
+  const sidebar = document.getElementById("react-container")?.parentElement;
+  if (sidebar) {
+    new MutationObserver(() => updateLegendPosition(wrapper)).observe(sidebar, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+  }
+
+  // Collapsed state: info circle button
+  const toggle = document.createElement("button");
+  toggle.id = "cogs-legend-toggle";
+  toggle.title = "Show highlight legend";
+  toggle.textContent = "\u{1F4A1}";
+  toggle.addEventListener("click", () => setLegendCollapsed(wrapper, false));
+
+  // Expanded state: full legend panel
+  const legend = document.createElement("div");
+  legend.id = "cogs-floating-legend";
+
+  const header = document.createElement("div");
+  header.className = "cogs-legend-header";
+  header.textContent = "COGS Highlights";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "cogs-legend-close";
+  closeBtn.textContent = "\u00d7";
+  closeBtn.title = "Collapse legend";
+  closeBtn.addEventListener("click", () => setLegendCollapsed(wrapper, true));
+  header.appendChild(closeBtn);
+  legend.appendChild(header);
+
+  for (const { color, label } of LEGEND_ITEMS) {
+    const item = document.createElement("div");
+    item.className = "cogs-legend-item";
+
+    const swatch = document.createElement("span");
+    swatch.className = "cogs-legend-swatch";
+    swatch.style.backgroundColor = color;
+
+    const text = document.createElement("span");
+    text.textContent = label;
+
+    item.appendChild(swatch);
+    item.appendChild(text);
+    legend.appendChild(item);
+  }
+
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(legend);
+  document.body.appendChild(wrapper);
+
+  // Apply initial collapsed state
+  if (legendCollapsed) {
+    legend.style.display = "none";
+  } else {
+    toggle.style.display = "none";
+  }
+}
+
 async function refreshHighlights(): Promise<void> {
   if (!isCourseSearchPage()) return;
 
@@ -170,12 +271,14 @@ async function refreshHighlights(): Promise<void> {
 
   if (!config.enabled) {
     containers.forEach(clearHighlight);
+    ensureFloatingLegend(false);
     return;
   }
 
   const selectedStream = config.streams[config.selectedStream];
   if (!selectedStream) {
     containers.forEach(clearHighlight);
+    ensureFloatingLegend(false);
     return;
   }
 
@@ -221,6 +324,8 @@ async function refreshHighlights(): Promise<void> {
       }
     })
   );
+
+  ensureFloatingLegend(true);
 }
 
 function scheduleRefresh() {

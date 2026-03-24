@@ -1,6 +1,6 @@
 import Schedule from "../../objects/Schedule";
 import Section from "../../objects/Section";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import Calendar from "../Calendar/Calendar";
 import CalendarControls from "../CalendarControls/CalendarControls";
@@ -34,7 +34,11 @@ function App() {
   const [availableSessions, setAvailableSessions] = useState<string[]>([]);
 
   const [schedule, setSchedule] = useState<Schedule>(new Schedule());
+  const scheduleRef = useRef(schedule);
+  scheduleRef.current = schedule;
   const [newSection, setNewSection] = useState<Section | null>(null);
+  const newSectionRef = useRef(newSection);
+  newSectionRef.current = newSection;
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [creatingCustomSection, setCreatingCustomSection] =
     useState<boolean>(false);
@@ -83,14 +87,14 @@ function App() {
         ExtensionStorage.getNewSection().then((updatedNewSection) => {
           if (
             !updatedNewSection ||
-            updatedNewSection.getCourseID() === newSection?.getCourseID()
+            updatedNewSection.getCourseID() === newSectionRef.current?.getCourseID()
           )
             return;
           setNewSection(updatedNewSection);
         });
       } else if (changes.schedule) {
         ExtensionStorage.getSchedule().then((newSchedule) => {
-          if (!newSchedule || newSchedule.getId() === schedule.getId()) return;
+          if (!newSchedule || newSchedule.getId() === scheduleRef.current.getId()) return;
           setSchedule(newSchedule);
         });
       } else if (changes.currentSession) {

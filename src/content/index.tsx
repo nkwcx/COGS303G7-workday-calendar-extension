@@ -76,6 +76,8 @@ setupObserver();
 
 // Read the initial state from storage and adjust UI accordingly
 chrome.storage.local.get("drawerOpen", function (data) {
+  if (document.querySelector("#react-container")) return;
+
   const containerWrapper = document.createElement("div");
   containerWrapper.style.position = "fixed";
   containerWrapper.style.top = "50%"; // Center vertically
@@ -89,8 +91,7 @@ chrome.storage.local.get("drawerOpen", function (data) {
   icon.textContent = data.drawerOpen ? "▶" : "◀"; // Initially showing the right arrow
   icon.style.position = "absolute";
   icon.style.top = "50%"; // Vertically center on the tab
-  icon.style.transform = "translateY(-50%)";
-  icon.style.transform = "translateX(-100%)";
+  icon.style.transform = "translateY(-50%) translateX(-100%)";
 
   icon.style.width = "30px";
   icon.style.height = "30px";

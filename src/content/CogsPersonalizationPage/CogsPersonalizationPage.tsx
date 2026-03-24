@@ -9,6 +9,7 @@ import {
   normalizeCourseCode,
   parseCourseCodes,
 } from "../../objects/CogsPersonalization";
+import Schedule from "../../objects/Schedule";
 import InfoSquareIcon from "../Icons/InfoSquareIcon";
 import SettingInfoModal from "../Setting/SettingInfoModal/SettingInfoModal";
 
@@ -271,25 +272,42 @@ const CogsPersonalizationPage = () => {
         />
       </div>
 
-      <div className="cogs-legend">
-        <span className="cogs-legend-title">Highlight Legend</span>
-        <div className="cogs-legend-row">
-          <span className="cogs-legend-swatch cogs-legend-green" />
-          <span>Required course — not completed</span>
-        </div>
-        <div className="cogs-legend-row">
-          <span className="cogs-legend-swatch cogs-legend-green-light" />
-          <span>Module course — not completed</span>
-        </div>
-        <div className="cogs-legend-row">
-          <span className="cogs-legend-swatch cogs-legend-grey" />
-          <span>Already scheduled or completed</span>
-        </div>
-        <div className="cogs-legend-row">
-          <span className="cogs-legend-swatch cogs-legend-red" />
-          <span>Time conflict</span>
-        </div>
-      </div>
+      <button
+        type="button"
+        className="cogs-reset-btn"
+        onClick={async () => {
+          if (
+            !window.confirm(
+              "Reset all COGS data? This will clear your stream selection, completed courses, and entire schedule. This cannot be undone."
+            )
+          )
+            return;
+
+          await ExtensionStorage.setCogsPersonalizationConfig(
+            DEFAULT_COGS_PERSONALIZATION_CONFIG
+          );
+          await ExtensionStorage.setSchedule(new Schedule());
+
+          const defaultStream =
+            DEFAULT_COGS_STREAMS[
+              DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream
+            ];
+          setIsEnabled(DEFAULT_COGS_PERSONALIZATION_CONFIG.enabled);
+          setStreamName(DEFAULT_COGS_PERSONALIZATION_CONFIG.selectedStream);
+          setRequiredCoursesInput(
+            (defaultStream?.requiredCourses ?? []).join("\n")
+          );
+          setModuleCoursesInput(
+            (defaultStream?.moduleCourses ?? []).join("\n")
+          );
+          setCompletedCoursesInput("");
+
+          alert("COGS data has been reset.");
+        }}
+      >
+        Reset COGS Data
+      </button>
+
     </div>
   );
 };

@@ -161,7 +161,6 @@ export default class ExtensionStorage {
   }
 
   static async setSchedule(schedule: Schedule): Promise<void> {
-    if (schedule.getSections().length === 0) return;
     await chrome.storage.local.set({
       schedule: JSON.stringify(schedule.exportToJSON()),
     });
