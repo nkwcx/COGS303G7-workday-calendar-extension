@@ -113,6 +113,8 @@ chrome.storage.local.get("drawerOpen", function (data) {
   container.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
   container.style.borderRadius = "8px";
   container.style.maxHeight = "705px";
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
 
   containerWrapper.appendChild(icon);
   containerWrapper.appendChild(container);

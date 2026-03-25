@@ -1,3 +1,11 @@
+.app-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .top-bar {
   height: 27px;
   background-color: var(--primary-color);

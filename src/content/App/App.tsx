@@ -165,7 +165,7 @@ function App() {
   }, [currWorklist, isLoaded]);
 
   return (
-    <div>
+    <div className="app-root">
       <div className="top-bar">
         <div className="top-bar-icon">
           <DownloadICS

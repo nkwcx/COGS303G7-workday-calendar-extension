@@ -224,8 +224,17 @@ const CogsPersonalizationPage = () => {
           ]}
         </div>
         <div className="cogs-progress-note">
-          To import completed courses, open your Workday Academic Progress or
-          Academic History page, then click the import button below.
+          To import completed courses, open your{" "}
+          <a
+            href="https://wd10.myworkday.com/ubc/d/home.htmld"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cogs-link"
+          >
+            Workday Academics page
+          </a>
+          , navigate to Academic Progress or Academic History, then click the
+          import button below.
         </div>
         <button
           type="button"
@@ -250,7 +259,16 @@ const CogsPersonalizationPage = () => {
 
       <div className="cogs-page-field">
         <label className="cogs-field-label">
-          Module Courses (program defaults)
+          Module Courses (
+          <a
+            href="https://cogsys.ubc.ca/degree-requirements/module-courses/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cogs-link"
+          >
+            program defaults
+          </a>
+          )
         </label>
         <textarea
           className="cogs-textarea"
