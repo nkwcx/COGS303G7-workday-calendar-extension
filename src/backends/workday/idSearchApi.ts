@@ -77,17 +77,13 @@ export function fetchSectionFromJSON(
   let session = "";
   const sectionDetails: SectionDetail[] = [];
 
-  if (!meetingPatterns || meetingPatterns.length === 0) {
-    throw new Error(
-      "No meeting pattern found, this section does not have a meeting time set. If this is incorrect, please manually add the section time."
-    );
-  }
-
-  for (const meetingPattern of meetingPatterns) {
-    const { session: parsedSession, sectionDetail } =
-      getSectionDetailFromMeetingPattern(meetingPattern);
-    session = parsedSession;
-    sectionDetails.push(sectionDetail);
+  if (meetingPatterns && meetingPatterns.length > 0) {
+    for (const meetingPattern of meetingPatterns) {
+      const { session: parsedSession, sectionDetail } =
+        getSectionDetailFromMeetingPattern(meetingPattern);
+      session = parsedSession;
+      sectionDetails.push(sectionDetail);
+    }
   }
 
   return new Section(
@@ -212,6 +208,13 @@ export async function extractSection(element: Element) {
   if (!fetchedSection) {
     throw new Error("Section failed to be fetched");
   }
+
+  if (fetchedSection.getSectionDetails().length === 0) {
+    throw new Error(
+      "No meeting pattern found, this section does not have a meeting time set. If this is incorrect, please manually add the section time."
+    );
+  }
+
   await ExtensionStorage.setNewSection(fetchedSection);
 }
 
